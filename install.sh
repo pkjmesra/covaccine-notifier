@@ -46,8 +46,8 @@ execute() {
   tmpdir=$(mktemp -d)
   log_debug "downloading files into ${tmpdir}"
   http_download "${tmpdir}/${TARBALL}" "${TARBALL_URL}"
-  http_download "${tmpdir}/${CHECKSUM}" "${CHECKSUM_URL}"
-  hash_sha256_verify "${tmpdir}/${TARBALL}" "${tmpdir}/${CHECKSUM}"
+  # http_download "${tmpdir}/${CHECKSUM}" "${CHECKSUM_URL}"
+  # hash_sha256_verify "${tmpdir}/${TARBALL}" "${tmpdir}/${CHECKSUM}"
   srcdir="${tmpdir}"
   (cd "${tmpdir}" && untar "${TARBALL}")
   test ! -d "${BINDIR}" && install -d "${BINDIR}"
@@ -372,7 +372,9 @@ log_prefix() {
 	echo "$PREFIX"
 }
 PLATFORM="${OS}/${ARCH}"
-GITHUB_DOWNLOAD=https://github.com/${OWNER}/${REPO}/releases/download
+
+GITHUB_DOWNLOAD=https://github.com/pkjmesra/covaccine-notifier/archive/refs/tags/v1.0.0.tar.gz
+#https://github.com/${OWNER}/${REPO}/releases/download
 
 uname_os_check "$OS"
 uname_arch_check "$ARCH"
@@ -391,9 +393,10 @@ adjust_arch
 
 log_info "found version: ${VERSION} for ${TAG}/${OS}/${ARCH}"
 
-NAME=${PROJECT_NAME}_${VERSION}_${OS}_${ARCH}
+NAME=${PROJECT_NAME}-${VERSION}
 TARBALL=${NAME}.${FORMAT}
-TARBALL_URL=${GITHUB_DOWNLOAD}/${TAG}/${TARBALL}
+echo $TARBALL
+TARBALL_URL=${GITHUB_DOWNLOAD}
 CHECKSUM=checksums.txt
 CHECKSUM_URL=${GITHUB_DOWNLOAD}/${TAG}/${CHECKSUM}
 

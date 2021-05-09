@@ -120,7 +120,7 @@ func searchByPincode(pinCode string) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to fetch appointment sessions")
 	}
-	return getAvailableSessions(response, age)
+	return getAvailableSessions(response, age, pinCode)
 }
 
 func getStateIDByName(state string) (int, error) {
@@ -177,10 +177,10 @@ func searchByStateDistrict(age int, state, district string) error {
 	if err != nil {
 		return errors.Wrap(err, "Failed to fetch appointment sessions")
 	}
-	return getAvailableSessions(response, age)
+	return getAvailableSessions(response, age, state + "," + district)
 }
 
-func getAvailableSessions(response []byte, age int) error {
+func getAvailableSessions(response []byte, age int, criteria string) error {
 	if response == nil {
 		// log.Printf("Received unexpected response, rechecking after %v seconds", interval)
 		return nil
@@ -224,9 +224,9 @@ func getAvailableSessions(response []byte, age int) error {
 		return err
 	}
 	if buf.Len() == 0 {
-		log.Printf("No slots available, rechecking after %v seconds", interval)
+		log.Printf("No slots available for %s, rechecking after %v seconds",criteria, interval)
 		return nil
 	}
-	log.Print("Found available slots, sending email")
-	return sendMail(email, password, buf.String())
+	log.Print("Found available slots for " + criteria + ", sending email")
+	return sendMail(email, password, buf.String(), criteria)
 }
