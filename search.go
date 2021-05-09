@@ -223,11 +223,13 @@ func getAvailableSessions(response []byte, age int, criteria string) error {
 	if err := w.Flush(); err != nil {
 		return err
 	}
+
 	if buf.Len() == 0 {
 		log.Printf("No slots available for %s, rechecking after %v seconds",criteria, interval)
 		return nil
 	}
 	log.Print("Found available slots for " + criteria + ", sending email")
 	playnotification()
+	sendwhatsapptext(buf.String())
 	return sendMail(email, password, buf.String(), criteria)
 }

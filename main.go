@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	pinCode, state, district, email, password, notificationFile, date string
+	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date string
 
 	age, interval int
 
@@ -35,6 +35,7 @@ const (
 	emailPasswordEnv  		= "EMAIL_PASSOWORD"
 	searchIntervalEnv 		= "SEARCH_INTERVAL"
 	notificationMP3FileEnv 	= "NOTIFICATION_MP3_FILE"
+	whatsappRemoteNumEnv 	= "REMOTE_WHATSAPP_NUM"
 
 	defaultSearchInterval = 60
 )
@@ -48,6 +49,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&password, "password", "p", os.Getenv(emailPasswordEnv), "Email ID password for auth")
 	rootCmd.PersistentFlags().IntVarP(&interval, "interval", "i", getIntEnv(searchIntervalEnv), fmt.Sprintf("Interval to repeat the search. Default: (%v) second", defaultSearchInterval))
 	rootCmd.PersistentFlags().StringVarP(&notificationFile, "notificationFile", "n", os.Getenv(notificationMP3FileEnv), "Specify a local MP3 file to play when a slot is available")
+	rootCmd.PersistentFlags().StringVarP(&whatsAppRemoteNum, "whatsAppRemoteNum", "w", os.Getenv(whatsappRemoteNumEnv), "Specify a remote WhatsApp mobile number")
 
 }
 
