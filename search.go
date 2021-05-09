@@ -228,5 +228,6 @@ func getAvailableSessions(response []byte, age int, criteria string) error {
 		return nil
 	}
 	log.Print("Found available slots for " + criteria + ", sending email")
+	playnotification()
 	return sendMail(email, password, buf.String(), criteria)
 }
