@@ -5,23 +5,27 @@ import (
 	"encoding/binary"
 	"fmt"
 	"os"
-	"os/signal"
+	// "os/signal"
 
 	"github.com/rocket049/go-mpg123/mpg123"
 	"github.com/gordonklaus/portaudio"
 )
 
 func playnotification() {
-	fmt.Println("Playing .  Press Ctrl-C to stop.")
+	if _, err := os.Stat(notificationFile); os.IsNotExist(err) {
+  		fmt.Println("missing MP3 notification file! Cannot play sound.")
+		return
+	}
+	// fmt.Println("Playing .  Press Ctrl-C to stop.")
 
-	sig := make(chan os.Signal, 1)
-	signal.Notify(sig, os.Interrupt, os.Kill)
+	// sig := make(chan os.Signal, 1)
+	// signal.Notify(sig, os.Interrupt, os.Kill)
 
 	// create mpg123 decoder instance
 	decoder, err := mpg123.NewDecoder("")
 	chk(err)
 
-	fileName := "notify.mp3"
+	fileName := notificationFile
 	chk(decoder.Open(fileName))
 	defer decoder.Close()
 
@@ -52,8 +56,8 @@ func playnotification() {
 		chk(binary.Read(bytes.NewBuffer(audio), binary.LittleEndian, out))
 		chk(stream.Write())
 		select {
-		case <-sig:
-			return
+		// case <-sig:
+		// 	return
 		default:
 		}
 	}

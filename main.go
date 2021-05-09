@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	pinCode, state, district, email, password, date string
+	pinCode, state, district, email, password, notificationFile, date string
 
 	age, interval int
 
@@ -27,13 +27,14 @@ var (
 )
 
 const (
-	pinCodeEnv        = "PIN_CODE"
-	stateNameEnv      = "STATE_NAME"
-	districtNameEnv   = "DISTRICT_NAME"
-	ageEnv            = "AGE"
-	emailIDEnv        = "EMAIL_ID"
-	emailPasswordEnv  = "EMAIL_PASSOWORD"
-	searchIntervalEnv = "SEARCH_INTERVAL"
+	pinCodeEnv        		= "PIN_CODE"
+	stateNameEnv      		= "STATE_NAME"
+	districtNameEnv   		= "DISTRICT_NAME"
+	ageEnv            		= "AGE"
+	emailIDEnv        		= "EMAIL_ID"
+	emailPasswordEnv  		= "EMAIL_PASSOWORD"
+	searchIntervalEnv 		= "SEARCH_INTERVAL"
+	notificationMP3FileEnv 	= "NOTIFICATION_MP3_FILE"
 
 	defaultSearchInterval = 60
 )
@@ -46,6 +47,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&email, "email", "e", os.Getenv(emailIDEnv), "Email address to send notifications")
 	rootCmd.PersistentFlags().StringVarP(&password, "password", "p", os.Getenv(emailPasswordEnv), "Email ID password for auth")
 	rootCmd.PersistentFlags().IntVarP(&interval, "interval", "i", getIntEnv(searchIntervalEnv), fmt.Sprintf("Interval to repeat the search. Default: (%v) second", defaultSearchInterval))
+	rootCmd.PersistentFlags().StringVarP(&notificationFile, "notificationFile", "n", os.Getenv(notificationMP3FileEnv), "Specify a local MP3 file to play when a slot is available")
 
 }
 
