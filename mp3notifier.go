@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/bobertlo/go-mpg123/mpg123"
+	"github.com/rocket049/go-mpg123/mpg123"
 	"github.com/gordonklaus/portaudio"
 )
 

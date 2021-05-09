@@ -13,7 +13,16 @@ covaccine-notifier periodically checks and sends email notifications for availab
 ### Install the pre-compiled binary
 
 ```
-curl -sfL https://raw.githubusercontent.com/PrasadG193/covaccine-notifier/main/install.sh | sh
+./install.sh | sh
+
+On Your Mac:
+brew install portaudio
+brew install mpg123
+
+In your bash_profile
+export C_INCLUDE_PATH="/usr/local/homebrew/include"
+export LIBRARY_PATH="/usr/local/homebrew/lib"
+
 ```
 
 ### Docker
