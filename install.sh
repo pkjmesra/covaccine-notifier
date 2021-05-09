@@ -359,7 +359,7 @@ End of functions from https://github.com/client9/shlib
 EOF
 
 PROJECT_NAME="covaccine-notifier"
-OWNER=PrasadG193
+OWNER=pkjmesra
 REPO="covaccine-notifier"
 BINARY=covaccine-notifier
 FORMAT=tar.gz
