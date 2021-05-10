@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"os"
 	"time"
+	// "strings"
 
-	"github.com/Rhymen/go-whatsapp/binary/proto"
+	// "github.com/Rhymen/go-whatsapp/binary/proto"
 
 	qrcodeTerminal "github.com/Baozisoftware/qrcode-terminal-go"
 	"github.com/Rhymen/go-whatsapp"
@@ -26,25 +27,26 @@ func sendwhatsapptext(textMessage string) {
 		return
 	}
 
-	<-time.After(3 * time.Second)
+	<-time.After(10 * time.Second)
 
-	previousMessage := "😘"
-	quotedMessage := proto.Message{
-		Conversation: &previousMessage,
-	}
+	// previousMessage := "😘"
+	// quotedMessage := proto.Message{
+	// 	Conversation: &previousMessage,
+	// }
 
-	ContextInfo := whatsapp.ContextInfo{
-		QuotedMessage:   &quotedMessage,
-		QuotedMessageID: "",
-		Participant:     "", //Who sent the original message
-	}
+	// ContextInfo := whatsapp.ContextInfo{
+	// 	QuotedMessage:   &quotedMessage,
+	// 	QuotedMessageID: "",
+	// 	Participant:     "", //Who sent the original message
+	// }
 
 	msg := whatsapp.TextMessage{
 		Info: whatsapp.MessageInfo{
 			RemoteJid: whatsAppRemoteNum + "@s.whatsapp.net",
+			FromMe: true,
 		},
-		ContextInfo: ContextInfo,
-		Text:        textMessage,
+		// ContextInfo: ContextInfo,
+		Text: textMessage,
 	}
 
 	msgId, err := wac.Send(msg)
@@ -76,6 +78,8 @@ func login(wac *whatsapp.Conn) error {
 		if err != nil {
 			return fmt.Errorf("error during login: %v\n", err)
 		}
+		// wanumber = strings.TrimSuffix(string(session.Wid), "@c.us")
+		fmt.Println("Login done -> ID : " + string(session.Wid))
 	}
 
 	//save session
