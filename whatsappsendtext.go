@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
-	// "strings"
+	"strings"
 
 	// "github.com/Rhymen/go-whatsapp/binary/proto"
 
@@ -40,21 +40,25 @@ func sendwhatsapptext(textMessage string) {
 	// 	Participant:     "", //Who sent the original message
 	// }
 
-	msg := whatsapp.TextMessage{
+	numbers := strings.Split(whatsAppRemoteNum, ",")
+
+	for _, remoteNumber := range numbers {
+		msg := whatsapp.TextMessage{
 		Info: whatsapp.MessageInfo{
-			RemoteJid: whatsAppRemoteNum + "@s.whatsapp.net",
+			RemoteJid: remoteNumber + "@s.whatsapp.net",
 			FromMe: true,
 		},
 		// ContextInfo: ContextInfo,
 		Text: textMessage,
-	}
+		}
 
-	msgId, err := wac.Send(msg)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error sending message: %v", err)
-		os.Exit(1)
-	} else {
-		fmt.Println("Message Sent -> ID : " + msgId)
+		msgId, err := wac.Send(msg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error sending message: %v", err)
+			// os.Exit(1)
+		} else {
+			fmt.Println("Message Sent -> ID : " + msgId)
+		}	
 	}
 }
 
