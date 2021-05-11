@@ -14,7 +14,7 @@ import (
 
 var (
 	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date string
-
+	slotsAvailable bool
 	age, interval int
 
 	rootCmd = &cobra.Command{
@@ -55,6 +55,7 @@ func init() {
 
 // Execute executes the main command
 func Execute() error {
+	slotsAvailable = false
 	return rootCmd.Execute()
 }
 

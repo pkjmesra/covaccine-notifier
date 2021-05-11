@@ -58,6 +58,7 @@ type Appointments struct {
 		BlockName     string  `json:"block_name"`
 		BlockNameL    string  `json:"block_name_l"`
 		Pincode       int     `json:"pincode"`
+		Address       string  `json:"address"`
 		Lat           float64 `json:"lat"`
 		Long          float64 `json:"long"`
 		From          string  `json:"from"`
@@ -195,28 +196,25 @@ func getAvailableSessions(response []byte, age int, criteria string) error {
 	for _, center := range appnts.Centers {
 		for _, s := range center.Sessions {
 			if s.MinAgeLimit <= age && s.AvailableCapacity != 0 {
-				fmt.Fprintln(w, fmt.Sprintf("*Center\t%s*", center.Name))
-				fmt.Fprintln(w, fmt.Sprintf("State\t%s", center.StateName))
-				fmt.Fprintln(w, fmt.Sprintf("District\t%s", center.DistrictName))
-				fmt.Fprintln(w, fmt.Sprintf("PinCode\t%d", center.Pincode))
-				fmt.Fprintln(w, fmt.Sprintf("Fee\t%s", center.FeeType))
+				fmt.Fprintln(w, fmt.Sprintf("*Center\t  %s, %s, %s, %s, %d*", center.Name, center.Address, center.DistrictName, center.StateName, center.Pincode))
+				fmt.Fprintln(w, fmt.Sprintf("Fee\t  %s", center.FeeType))
 				if len(center.VaccineFees) != 0 {
 					fmt.Fprintln(w, fmt.Sprintf("Vaccine\t"))
 				}
 				for _, v := range center.VaccineFees {
-					fmt.Fprintln(w, fmt.Sprintf("\tName\t%s", v.Vaccine))
-					fmt.Fprintln(w, fmt.Sprintf("\tFees\t%s", v.Fee))
+					fmt.Fprintln(w, fmt.Sprintf("\tName\t  %s", v.Vaccine))
+					fmt.Fprintln(w, fmt.Sprintf("\tFees\t  %s", v.Fee))
 				}
-				fmt.Fprintln(w, fmt.Sprintf("Sessions\t"))
-				fmt.Fprintln(w, fmt.Sprintf("\t*Date\t%s*", s.Date))
-				fmt.Fprintln(w, fmt.Sprintf("\t*AvailableCapacity\t%.0f*", s.AvailableCapacity))
-				fmt.Fprintln(w, fmt.Sprintf("\tMinAgeLimit\t%d", s.MinAgeLimit))
-				fmt.Fprintln(w, fmt.Sprintf("\tVaccine\t%s", s.Vaccine))
-				fmt.Fprintln(w, fmt.Sprintf("\tSlots"))
-				for _, slot := range s.Slots {
-					fmt.Fprintln(w, fmt.Sprintf("\t\t%s", slot))
-				}
-				fmt.Fprintln(w, "-----------------------------")
+				// fmt.Fprintln(w, fmt.Sprintf("Sessions\t"))
+				fmt.Fprintln(w, fmt.Sprintf("\t*Date\t  %s*", s.Date))
+				fmt.Fprintln(w, fmt.Sprintf("\t*AvailableCapacity\t  %.0f*", s.AvailableCapacity))
+				fmt.Fprintln(w, fmt.Sprintf("\tMinAgeLimit\t  %d", s.MinAgeLimit))
+				fmt.Fprintln(w, fmt.Sprintf("\tVaccine\t  %s", s.Vaccine))
+				// fmt.Fprintln(w, fmt.Sprintf("\tSlots"))
+				// for _, slot := range s.Slots {
+				// 	fmt.Fprintln(w, fmt.Sprintf("\t\t  %s", slot))
+				// }
+				fmt.Fprintln(w, "Go to https://selfregistration.cowin.gov.in/ immediately to book yourself.")
 			}
 		}
 	}
@@ -225,11 +223,16 @@ func getAvailableSessions(response []byte, age int, criteria string) error {
 	}
 	// sendwhatsapptext("Test notification for vaccine availability." + "\n\n Go to https://selfregistration.cowin.gov.in/\n")
 	if buf.Len() == 0 {
+		if slotsAvailable {
+			sendwhatsapptext("All slots booked. It will auto-notify when the next slot becomes available.\n")
+			slotsAvailable = false
+		}
 		log.Printf("No slots available for %s, rechecking after %v seconds",criteria, interval)
 		return nil
 	}
+	slotsAvailable = true
 	log.Print("Found available slots for " + criteria + ", sending email")
-	sendwhatsapptext(buf.String() + "\n\n Go to https://selfregistration.cowin.gov.in/\n")
+	sendwhatsapptext(buf.String())
 	playnotification()
 	return sendMail(email, password, buf.String(), criteria)
 }
