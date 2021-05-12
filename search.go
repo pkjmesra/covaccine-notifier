@@ -116,10 +116,11 @@ func queryServer(path string) ([]byte, error) {
 	return bodyBytes, nil
 }
 
-func searchByPincode(pinCode string) error {
+func searchByPincode(pinCode string) (*BookingSlot, error) {
+	bk := BookingSlot{Available:false}
 	response, err := queryServer(fmt.Sprintf(calendarByPinURLFormat, pinCode, timeNow()))
 	if err != nil {
-		return errors.Wrap(err, "Failed to fetch appointment sessions")
+		return &bk, errors.Wrap(err, "Failed to fetch appointment sessions")
 	}
 	return getAvailableSessions(response, age, pinCode)
 }
@@ -160,79 +161,117 @@ func getDistrictIDByName(stateID int, district string) (int, error) {
 	return 0, errors.New("Invalid district name passed")
 }
 
-func searchByStateDistrict(age int, state, district string) error {
+func searchByStateDistrict(age int, state, district string) (*BookingSlot, error) {
 	var err1 error
+	bk := BookingSlot{Available:false}
 	if stateID == 0 {
 		stateID, err1 = getStateIDByName(state)
 		if err1 != nil {
-			return err1
+			return &bk, err1
 		}
 	}
 	if districtID == 0 {
 		districtID, err1 = getDistrictIDByName(stateID, district)
 		if err1 != nil {
-			return err1
+			return &bk, err1
 		}
 	}
 	response, err := queryServer(fmt.Sprintf(calendarByDistrictURLFormat, districtID, timeNow()))
 	if err != nil {
-		return errors.Wrap(err, "Failed to fetch appointment sessions")
+		return &bk, errors.Wrap(err, "Failed to fetch appointment sessions")
 	}
-	return getAvailableSessions(response, age, state + "," + district)
+	var criteria = state + "," + district
+	var ck *BookingSlot
+	ck, err = getAvailableSessions(response, age, criteria)
+	if shouldSendNotification(ck) {
+		log.Print("Found available slots for " + criteria + ", sending email")
+		sendwhatsapptext(ck.Description)
+		playnotification()
+		sendMail(email, password, bk.Description, criteria)
+	}
+	return ck, err
 }
 
-func getAvailableSessions(response []byte, age int, criteria string) error {
+func getAvailableSessions(response []byte, age int, criteria string) (*BookingSlot, error) {
+	bk := BookingSlot{Available:false, Preferred:false}
 	if response == nil {
 		// log.Printf("Received unexpected response, rechecking after %v seconds", interval)
-		return nil
+		return &bk, nil
 	}
 	appnts := Appointments{}
 	err := json.Unmarshal(response, &appnts)
 	if err != nil {
-		return err
+		return &bk, err
 	}
 	var buf bytes.Buffer
 	w := tabwriter.NewWriter(&buf, 1, 8, 1, '\t', 0)
+
+	count := 0
+	outer:
 	for _, center := range appnts.Centers {
 		for _, s := range center.Sessions {
 			if s.MinAgeLimit <= age && s.AvailableCapacity != 0 {
-				fmt.Fprintln(w, fmt.Sprintf("*Center\t  %s, %s, %s, %s, %d*", center.Name, center.Address, center.DistrictName, center.StateName, center.Pincode))
-				fmt.Fprintln(w, fmt.Sprintf("Fee\t  %s", center.FeeType))
-				if len(center.VaccineFees) != 0 {
-					fmt.Fprintln(w, fmt.Sprintf("Vaccine\t"))
+				if bookingCenterId > 0 {
+					if bookingCenterId == center.CenterID {
+						bk.Preferred = true
+						bk.CenterID = center.CenterID
+						bk.SessionID = s.SessionID
+						bk.CenterName = center.Name
+						bk.Slot = s.Slots[3]
+						center.Name = "(Preferred) :" + center.Name
+					}
 				}
-				for _, v := range center.VaccineFees {
-					fmt.Fprintln(w, fmt.Sprintf("\tName\t  %s", v.Vaccine))
-					fmt.Fprintln(w, fmt.Sprintf("\tFees\t  %s", v.Fee))
+				if bk.Preferred || bookingCenterId <= 0 {
+					count++
+					fmt.Fprintln(w, fmt.Sprintf("*(%d). Center\t  %s, %s, %s, %s, %d*", count, center.Name, center.Address, center.DistrictName, center.StateName, center.Pincode))
+					fmt.Fprintln(w, fmt.Sprintf("Fee\t  %s", center.FeeType))
+					fmt.Fprintln(w, fmt.Sprintf("CenterID\t  %d", center.CenterID))
+					if len(center.VaccineFees) != 0 {
+						fmt.Fprintln(w, fmt.Sprintf("Vaccine\t"))
+					}
+					for _, v := range center.VaccineFees {
+						fmt.Fprintln(w, fmt.Sprintf("\tName\t  %s", v.Vaccine))
+						fmt.Fprintln(w, fmt.Sprintf("\tFees\t  %s", v.Fee))
+					}
+					// fmt.Fprintln(w, fmt.Sprintf("Sessions\t"))
+					fmt.Fprintln(w, fmt.Sprintf("\t*Date\t  %s*", s.Date))
+					fmt.Fprintln(w, fmt.Sprintf("\t*AvailableCapacity\t  %.0f*", s.AvailableCapacity))
+					fmt.Fprintln(w, fmt.Sprintf("\tMinAgeLimit\t  %d", s.MinAgeLimit))
+					fmt.Fprintln(w, fmt.Sprintf("\tVaccine\t  %s", s.Vaccine))
+					// fmt.Fprintln(w, fmt.Sprintf("\tSlots"))
+					// for _, slot := range s.Slots {
+					// 	fmt.Fprintln(w, fmt.Sprintf("\t\t  %s", slot))
+					// }
+					fmt.Fprintln(w, "Go to https://selfregistration.cowin.gov.in/ immediately to book yourself.\n\n")
 				}
-				// fmt.Fprintln(w, fmt.Sprintf("Sessions\t"))
-				fmt.Fprintln(w, fmt.Sprintf("\t*Date\t  %s*", s.Date))
-				fmt.Fprintln(w, fmt.Sprintf("\t*AvailableCapacity\t  %.0f*", s.AvailableCapacity))
-				fmt.Fprintln(w, fmt.Sprintf("\tMinAgeLimit\t  %d", s.MinAgeLimit))
-				fmt.Fprintln(w, fmt.Sprintf("\tVaccine\t  %s", s.Vaccine))
-				// fmt.Fprintln(w, fmt.Sprintf("\tSlots"))
-				// for _, slot := range s.Slots {
-				// 	fmt.Fprintln(w, fmt.Sprintf("\t\t  %s", slot))
-				// }
-				fmt.Fprintln(w, "Go to https://selfregistration.cowin.gov.in/ immediately to book yourself.")
+				if bk.Preferred {
+					break outer
+				}
 			}
 		}
 	}
 	if err := w.Flush(); err != nil {
-		return err
+		return &bk, err
 	}
 	// sendwhatsapptext("Test notification for vaccine availability." + "\n\n Go to https://selfregistration.cowin.gov.in/\n")
 	if buf.Len() == 0 {
 		if slotsAvailable {
 			sendwhatsapptext("All slots booked. It will auto-notify when the next slot becomes available.\n")
 			slotsAvailable = false
+			bk.Available = slotsAvailable
 		}
 		log.Printf("No slots available for %s, rechecking after %v seconds",criteria, interval)
-		return nil
+		return &bk, nil
 	}
 	slotsAvailable = true
-	log.Print("Found available slots for " + criteria + ", sending email")
-	sendwhatsapptext(buf.String())
-	playnotification()
-	return sendMail(email, password, buf.String(), criteria)
+	bk.Available = slotsAvailable
+	bk.Description = buf.String()
+	return &bk, nil
+}
+
+func shouldSendNotification(availableSlot *BookingSlot) bool {
+	if bookingCenterId > 0 {
+		return availableSlot.Available && availableSlot.Preferred
+	}
+	return availableSlot.Available
 }

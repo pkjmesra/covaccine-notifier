@@ -11,11 +11,21 @@ import (
 	"github.com/spf13/cobra"
 	
 )
+type BookingSlot struct {
+		Available 	bool
+		Preferred 	bool
+		CenterID 	int
+		CenterName  string
+		SessionID 	string
+		Slot 		string
+		Description string
+	}
 
 var (
 	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date string
 	slotsAvailable bool
-	age, interval int
+	age, interval, bookingCenterId int
+	bookingSlot *BookingSlot
 
 	rootCmd = &cobra.Command{
 		Use:   "covaccine-notifier [FLAGS]",
@@ -36,6 +46,7 @@ const (
 	searchIntervalEnv 		= "SEARCH_INTERVAL"
 	notificationMP3FileEnv 	= "NOTIFICATION_MP3_FILE"
 	whatsappRemoteNumEnv 	= "REMOTE_WHATSAPP_NUM"
+	bookingCenterIdEnv 		= "BOOKING_CENTERID"
 
 	defaultSearchInterval = 60
 )
@@ -50,12 +61,15 @@ func init() {
 	rootCmd.PersistentFlags().IntVarP(&interval, "interval", "i", getIntEnv(searchIntervalEnv), fmt.Sprintf("Interval to repeat the search. Default: (%v) second", defaultSearchInterval))
 	rootCmd.PersistentFlags().StringVarP(&notificationFile, "notificationFile", "n", os.Getenv(notificationMP3FileEnv), "Specify a local MP3 file to play when a slot is available")
 	rootCmd.PersistentFlags().StringVarP(&whatsAppRemoteNum, "whatsAppRemoteNum", "w", os.Getenv(whatsappRemoteNumEnv), "Specify a remote WhatsApp mobile number")
+	rootCmd.PersistentFlags().IntVarP(&bookingCenterId, "bookingCenterId", "b", getIntEnv(bookingCenterIdEnv), "Preferred booking center Id")
 
 }
 
 // Execute executes the main command
 func Execute() error {
 	slotsAvailable = false
+	bookingSlot := BookingSlot{}
+	bookingSlot.Available = slotsAvailable
 	return rootCmd.Execute()
 }
 
@@ -118,8 +132,22 @@ func Run(args []string) error {
 
 func checkSlots() error {
 	// Search for slots
+	var err error
+	var bk *BookingSlot
 	if len(pinCode) != 0 {
-		return searchByPincode(pinCode)
+		bk, err = searchByPincode(pinCode)
+		return err
 	}
-	return searchByStateDistrict(age, state, district)
+	bk, err = searchByStateDistrict(age, state, district)
+	if bk.Available && bk.Preferred {
+		if err = bookSlot(bk); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func bookSlot(availableSlot *BookingSlot) error {
+	log.Printf("Going to book a slot for CenterID :%d, SessionID: %s, Slot: %s", availableSlot.CenterID, availableSlot.SessionID, availableSlot.Slot)
+	return nil
 }
