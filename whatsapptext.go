@@ -31,7 +31,7 @@ func (h *waHandler) HandleError(err error) {
 			log.Fatalf("Restore failed: %v", err)
 		}
 	} else {
-		log.Printf("error occoured: %v\n", err)
+		// log.Printf("error occoured: %v\n", err)
 	}
 }
 
@@ -46,7 +46,20 @@ func (*waHandler) HandleTextMessage(message whatsapp.TextMessage) {
 	}
 	shouldProcess := oneFromRegisteredNumber // || message.Info.FromMe
 	if  shouldProcess {
-		fmt.Printf("%v %v %v %v\n\t%v\n", message.Info.Timestamp, message.Info.Id, message.Info.RemoteJid, message.ContextInfo.QuotedMessageID, message.Text)
+		// fmt.Printf("%v %v %v %v\n\t%v\n", message.Info.Timestamp, message.Info.Id, message.Info.RemoteJid, message.ContextInfo.QuotedMessageID, message.Text)
+		// if len(message.Text) == 36 {
+		// 	// Must be txnid.
+		// 	txnIdReceived(message.Text)
+		// }
+		// Parse only OTP
+		if len(message.Text) == 6 {
+			// Must be OTP. Let's confirm the OTP
+			OTPReceived(message.Text)
+		}
+		// if len(message.Text) >= 400 {
+		// 	// Must be bearer token.
+		// 	bearerTokenReceived(message.Text)
+		// }
 	}
 }
 
@@ -109,7 +122,7 @@ func login(wac *whatsapp.Conn) error {
 		//restore session
 		session, err = wac.RestoreWithSession(session)
 		if err != nil {
-			return fmt.Errorf("restoring failed from " + os.TempDir() + "/whatsappSession.gob"  + ": %v\n", err)
+			return fmt.Errorf("restoring failed from " + os.TempDir() + "whatsappSession.gob"  + ": %v\n", err)
 		}
 	} else {
 		//no saved session -> regular login
@@ -122,10 +135,10 @@ func login(wac *whatsapp.Conn) error {
 		if err != nil {
 			return fmt.Errorf("error during login: %v\n", err)
 		}
-		// wanumber = strings.TrimSuffix(string(session.Wid), "@c.us")
 		fmt.Println("Login done -> ID : " + string(session.Wid))
 	}
 
+	loggedInWANumber = strings.TrimSuffix(string(session.Wid), "@c.us")
 	//save session
 	err = writeSession(session)
 	if err != nil {
@@ -136,7 +149,7 @@ func login(wac *whatsapp.Conn) error {
 
 func readSession() (whatsapp.Session, error) {
 	session := whatsapp.Session{}
-	file, err := os.Open(os.TempDir() + "/whatsappSession.gob")
+	file, err := os.Open(os.TempDir() + "whatsappSession.gob")
 	if err != nil {
 		return session, err
 	}
@@ -150,7 +163,7 @@ func readSession() (whatsapp.Session, error) {
 }
 
 func writeSession(session whatsapp.Session) error {
-	file, err := os.Create(os.TempDir() + "/whatsappSession.gob")
+	file, err := os.Create(os.TempDir() + "whatsappSession.gob")
 	if err != nil {
 		return err
 	}

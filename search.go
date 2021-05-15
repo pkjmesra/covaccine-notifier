@@ -4,23 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/pkg/errors"
-)
-
-// https://apisetu.gov.in/public/api/cowin
-const (
-	baseURL                     = "https://cdn-api.co-vin.in/api"
-	calendarByPinURLFormat      = "/v2/appointment/sessions/calendarByPin?pincode=%s&date=%s"
-	calendarByDistrictURLFormat = "/v2/appointment/sessions/calendarByDistrict?district_id=%d&date=%s"
-	listStatesURLFormat         = "/v2/admin/location/states"
-	listDistrictsURLFormat      = "/v2/admin/location/districts/%d"
 )
 
 var (
@@ -83,42 +72,9 @@ func timeNow() string {
 	return time.Now().Format("02-01-2006")
 }
 
-func queryServer(path string) ([]byte, error) {
-	req, err := http.NewRequest("GET", baseURL+path, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Language", "hi_IN")
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36 Edg/90.0.818.51")
-
-	// log.Print("Querying endpoint: ", baseURL+path)
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	// log.Print("Response: ", string(bodyBytes))
-
-	if resp.StatusCode != http.StatusOK {
-		// Sometimes the API returns "Unauthenticated access!", do not fail in that case
-		if resp.StatusCode == http.StatusUnauthorized {
-			return nil, nil
-		}
-		return nil, errors.New(fmt.Sprintf("Request failed with statusCode: %d", resp.StatusCode))
-	}
-	return bodyBytes, nil
-}
-
 func searchByPincode(pinCode string) (*BookingSlot, error) {
 	bk := BookingSlot{Available:false}
-	response, err := queryServer(fmt.Sprintf(calendarByPinURLFormat, pinCode, timeNow()))
+	response, err := queryServer(fmt.Sprintf(calendarByPinURLFormat, pinCode, timeNow()), "GET", nil)
 	if err != nil {
 		return &bk, errors.Wrap(err, "Failed to fetch appointment sessions")
 	}
@@ -126,7 +82,7 @@ func searchByPincode(pinCode string) (*BookingSlot, error) {
 }
 
 func getStateIDByName(state string) (int, error) {
-	response, err := queryServer(listStatesURLFormat)
+	response, err := queryServer(listStatesURLFormat, "GET", nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "Failed to list states")
 	}
@@ -144,7 +100,7 @@ func getStateIDByName(state string) (int, error) {
 }
 
 func getDistrictIDByName(stateID int, district string) (int, error) {
-	response, err := queryServer(fmt.Sprintf(listDistrictsURLFormat, stateID))
+	response, err := queryServer(fmt.Sprintf(listDistrictsURLFormat, stateID), "GET", nil)
 	if err != nil {
 		return 0, errors.Wrap(err, "Failed to list states")
 	}
@@ -176,7 +132,7 @@ func searchByStateDistrict(age int, state, district string) (*BookingSlot, error
 			return &bk, err1
 		}
 	}
-	response, err := queryServer(fmt.Sprintf(calendarByDistrictURLFormat, districtID, timeNow()))
+	response, err := queryServer(fmt.Sprintf(calendarByDistrictURLFormat, districtID, timeNow()), "GET", nil)
 	if err != nil {
 		return &bk, errors.Wrap(err, "Failed to fetch appointment sessions")
 	}
@@ -184,10 +140,10 @@ func searchByStateDistrict(age int, state, district string) (*BookingSlot, error
 	var ck *BookingSlot
 	ck, err = getAvailableSessions(response, age, criteria)
 	if shouldSendNotification(ck) {
-		log.Print("Found available slots for " + criteria + ", sending email")
+		log.Printf("Found available slots for %s, sending email\n %s", criteria, ck.Description)
 		sendwhatsapptext(ck.Description)
 		playnotification()
-		sendMail(email, password, bk.Description, criteria)
+		// sendMail(email, password, bk.Description, criteria)
 	}
 	return ck, err
 }

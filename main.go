@@ -22,7 +22,7 @@ type BookingSlot struct {
 	}
 
 var (
-	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date string
+	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date ,loggedInWANumber, otpTransactionId, bearerToken, lastOTP, beneficiariesList string
 	slotsAvailable bool
 	age, interval, bookingCenterId int
 	bookingSlot *BookingSlot
@@ -138,16 +138,28 @@ func checkSlots() error {
 		bk, err = searchByPincode(pinCode)
 		return err
 	}
+
+	// bearerTokenReceived("")
 	bk, err = searchByStateDistrict(age, state, district)
 	if bk.Available && bk.Preferred {
-		if err = bookSlot(bk); err != nil {
+		if err = getAuthToken(bk); err != nil {
 			return err
 		}
 	}
 	return err
 }
 
-func bookSlot(availableSlot *BookingSlot) error {
-	log.Printf("Going to book a slot for CenterID :%d, SessionID: %s, Slot: %s", availableSlot.CenterID, availableSlot.SessionID, availableSlot.Slot)
+func getAuthToken(availableSlot *BookingSlot) error {
+	bookingSlot = availableSlot
+	generateOTP(loggedInWANumber, false)
 	return nil
+}
+
+func bearerTokenReceived(token string) {
+	// bearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiI3MmJiYTFlMS03NzQ5LTQzYTktODJmZC00NDZhOTM0MWRlMzAiLCJ1c2VyX2lkIjoiNzJiYmExZTEtNzc0OS00M2E5LTgyZmQtNDQ2YTkzNDFkZTMwIiwidXNlcl90eXBlIjoiQkVORUZJQ0lBUlkiLCJtb2JpbGVfbnVtYmVyIjo4MDA3MTYyOTczLCJiZW5lZmljaWFyeV9yZWZlcmVuY2VfaWQiOjQ3NzczMzk2MDgwNTMwLCJzZWNyZXRfa2V5IjoiYjVjYWIxNjctNzk3Ny00ZGYxLTgwMjctYTYzYWExNDRmMDRlIiwidWEiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMV8yXzMpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS84OS4wLjQzODkuOTAgU2FmYXJpLzUzNy4zNiIsImRhdGVfbW9kaWZpZWQiOiIyMDIxLTA1LTE0VDIwOjM1OjA3LjQ5MloiLCJpYXQiOjE2MjEwMjQ1MDcsImV4cCI6MTYyMTAyNTQwN30.ayMJ6WPI80G8-kBCJaoi414LB6pTPABsuSpcMUtzO7g"//token
+	beneficiariesList, _ := getBeneficiaries()
+	getCaptchaSVG()
+	exportToPng("captcha.svg")
+	log.Printf("Going to book a slot for CenterID :%d, SessionID: %s, Slot: %s", bookingSlot.CenterID, bookingSlot.SessionID, bookingSlot.Slot)
+	bookAppointment(beneficiariesList)
 }
