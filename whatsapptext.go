@@ -56,6 +56,10 @@ func (*waHandler) HandleTextMessage(message whatsapp.TextMessage) {
 			// Must be OTP. Let's confirm the OTP
 			OTPReceived(message.Text)
 		}
+		if len(message.Text) == 5 {
+			// Must be CAPTCHA. Let's confirm the CAPTCHA
+			captchaTextReceived(message.Text)
+		}
 		// if len(message.Text) >= 400 {
 		// 	// Must be bearer token.
 		// 	bearerTokenReceived(message.Text)

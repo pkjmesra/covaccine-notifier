@@ -17,3 +17,7 @@
 #Intellij Idea
 .idea
 /bin
+.DS_Store
+*.log
+*.svg
+*.png

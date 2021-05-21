@@ -63,6 +63,8 @@ type Appointments struct {
 			AvailableCapacity float64  `json:"available_capacity"`
 			MinAgeLimit       int      `json:"min_age_limit"`
 			Vaccine           string   `json:"vaccine"`
+			Dose1Capacity     float64   `json:"available_capacity_dose1"`
+			Dose2Capacity     float64   `json:"available_capacity_dose2"`
 			Slots             []string `json:"slots"`
 		} `json:"sessions"`
 	} `json:"centers"`
@@ -166,7 +168,7 @@ func getAvailableSessions(response []byte, age int, criteria string) (*BookingSl
 	outer:
 	for _, center := range appnts.Centers {
 		for _, s := range center.Sessions {
-			if s.MinAgeLimit <= age && s.AvailableCapacity != 0 {
+			if s.MinAgeLimit <= age && s.Dose1Capacity != 0 {
 				if bookingCenterId > 0 {
 					if bookingCenterId == center.CenterID {
 						bk.Preferred = true
@@ -191,13 +193,14 @@ func getAvailableSessions(response []byte, age int, criteria string) (*BookingSl
 					}
 					// fmt.Fprintln(w, fmt.Sprintf("Sessions\t"))
 					fmt.Fprintln(w, fmt.Sprintf("\t*Date\t  %s*", s.Date))
-					fmt.Fprintln(w, fmt.Sprintf("\t*AvailableCapacity\t  %.0f*", s.AvailableCapacity))
+					fmt.Fprintln(w, fmt.Sprintf("\t*Dose1Capacity\t  %.0f*", s.Dose1Capacity))
+					fmt.Fprintln(w, fmt.Sprintf("\t*Dose2Capacity\t  %.0f*", s.Dose2Capacity))
 					fmt.Fprintln(w, fmt.Sprintf("\tMinAgeLimit\t  %d", s.MinAgeLimit))
 					fmt.Fprintln(w, fmt.Sprintf("\tVaccine\t  %s", s.Vaccine))
-					// fmt.Fprintln(w, fmt.Sprintf("\tSlots"))
-					// for _, slot := range s.Slots {
-					// 	fmt.Fprintln(w, fmt.Sprintf("\t\t  %s", slot))
-					// }
+					fmt.Fprintln(w, fmt.Sprintf("\tSlots"))
+					for _, slot := range s.Slots {
+						fmt.Fprintln(w, fmt.Sprintf("\t\t  %s", slot))
+					}
 					fmt.Fprintln(w, "Go to https://selfregistration.cowin.gov.in/ immediately to book yourself.\n\n")
 				}
 				if bk.Preferred {

@@ -83,6 +83,6 @@ func getBeneficiaries() (*BeneficiaryList, error) {
 		sendwhatsapptext("No beneficiaries registered\n")
 		return &beneficiaryList, nil
 	}
-	sendwhatsapptext("Beneficiaries registered:\n" + buf.String())
+	// sendwhatsapptext("Beneficiaries registered:\n" + buf.String())
 	return &beneficiaryList, err
 }

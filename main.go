@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	// "flag"
 	"log"
 	"os"
 	"strconv"
@@ -22,10 +23,11 @@ type BookingSlot struct {
 	}
 
 var (
-	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date ,loggedInWANumber, otpTransactionId, bearerToken, lastOTP, beneficiariesList string
+	pinCode, state, district, email, password, notificationFile, whatsAppRemoteNum, date ,loggedInWANumber, otpTransactionId, bearerToken, lastOTP string
 	slotsAvailable bool
 	age, interval, bookingCenterId int
 	bookingSlot *BookingSlot
+	beneficiariesList *BeneficiaryList
 
 	rootCmd = &cobra.Command{
 		Use:   "covaccine-notifier [FLAGS]",
@@ -48,7 +50,7 @@ const (
 	whatsappRemoteNumEnv 	= "REMOTE_WHATSAPP_NUM"
 	bookingCenterIdEnv 		= "BOOKING_CENTERID"
 
-	defaultSearchInterval = 60
+	defaultSearchInterval = 240
 )
 
 func init() {
@@ -111,6 +113,14 @@ func getIntEnv(envVar string) int {
 }
 
 func Run(args []string) error {
+	// always make a log file
+	logfile, err := os.OpenFile("run.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening a log file: %v", err)
+	}
+	defer logfile.Close()
+	log.SetOutput(logfile)
+
 	if err := checkFlags(); err != nil {
 		return err
 	}
@@ -138,10 +148,11 @@ func checkSlots() error {
 		bk, err = searchByPincode(pinCode)
 		return err
 	}
-
+	// loggedInWANumber = "91YourNumber"
 	// bearerTokenReceived("")
+	// var debug = true
 	bk, err = searchByStateDistrict(age, state, district)
-	if bk.Available && bk.Preferred {
+	if bk.Available && bk.Preferred { // || debug 
 		if err = getAuthToken(bk); err != nil {
 			return err
 		}
@@ -151,15 +162,45 @@ func checkSlots() error {
 
 func getAuthToken(availableSlot *BookingSlot) error {
 	bookingSlot = availableSlot
-	generateOTP(loggedInWANumber, false)
+	if len(loggedInWANumber) > 0 {
+		generateOTP(loggedInWANumber, false)
+	} else {
+		log.Fatalf("Registered number not available!")
+	}
 	return nil
 }
 
 func bearerTokenReceived(token string) {
-	// bearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiI3MmJiYTFlMS03NzQ5LTQzYTktODJmZC00NDZhOTM0MWRlMzAiLCJ1c2VyX2lkIjoiNzJiYmExZTEtNzc0OS00M2E5LTgyZmQtNDQ2YTkzNDFkZTMwIiwidXNlcl90eXBlIjoiQkVORUZJQ0lBUlkiLCJtb2JpbGVfbnVtYmVyIjo4MDA3MTYyOTczLCJiZW5lZmljaWFyeV9yZWZlcmVuY2VfaWQiOjQ3NzczMzk2MDgwNTMwLCJzZWNyZXRfa2V5IjoiYjVjYWIxNjctNzk3Ny00ZGYxLTgwMjctYTYzYWExNDRmMDRlIiwidWEiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMV8yXzMpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS84OS4wLjQzODkuOTAgU2FmYXJpLzUzNy4zNiIsImRhdGVfbW9kaWZpZWQiOiIyMDIxLTA1LTE0VDIwOjM1OjA3LjQ5MloiLCJpYXQiOjE2MjEwMjQ1MDcsImV4cCI6MTYyMTAyNTQwN30.ayMJ6WPI80G8-kBCJaoi414LB6pTPABsuSpcMUtzO7g"//token
-	beneficiariesList, _ := getBeneficiaries()
+	// printLogs := flag.Bool("printlog", false, "set to true for printing all log lines on the screen")
+	// flag.Parse()
+
+	// bearerToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX25hbWUiOiI3MmJiYTFlMS03NzQ5LTQzYTktODJmZC00NDZhOTM0MWRlMzAiLCJ1c2VyX2lkIjoiNzJiYmExZTEtNzc0OS00M2E5LTgyZmQtNDQ2YTkzNDFkZTMwIiwidXNlcl90eXBlIjoiQkVORUZJQ0lBUlkiLCJtb2JpbGVfbnVtYmVyIjo4MDA3MTYyOTczLCJiZW5lZmljaWFyeV9yZWZlcmVuY2VfaWQiOjQ3NzczMzk2MDgwNTMwLCJzZWNyZXRfa2V5IjoiYjVjYWIxNjctNzk3Ny00ZGYxLTgwMjctYTYzYWExNDRmMDRlIiwidWEiOiJNb3ppbGxhLzUuMCAoTWFjaW50b3NoOyBJbnRlbCBNYWMgT1MgWCAxMV8yXzMpIEFwcGxlV2ViS2l0LzUzNy4zNiAoS0hUTUwsIGxpa2UgR2Vja28pIENocm9tZS84OS4wLjQzODkuOTAgU2FmYXJpLzUzNy4zNiIsImRhdGVfbW9kaWZpZWQiOiIyMDIxLTA1LTE1VDEzOjI5OjQ2Ljg1NVoiLCJpYXQiOjE2MjEwODUzODYsImV4cCI6MTYyMTA4NjI4Nn0.6sLTAoSaK3aZwaRGXX6_1Ik0am8zO4CINNznHOQF6nI"//token
+	beneficiariesList, _ = getBeneficiaries()
 	getCaptchaSVG()
 	exportToPng("captcha.svg")
-	log.Printf("Going to book a slot for CenterID :%d, SessionID: %s, Slot: %s", bookingSlot.CenterID, bookingSlot.SessionID, bookingSlot.Slot)
-	bookAppointment(beneficiariesList)
+	img, _ , err := getPngImage("captcha.png")
+	fmt.Println("Press <Esc> or q to exit from image")
+	display("captcha.png")
+	img, _ , err = convertToGrayScale(img)
+	if err != nil {
+    	log.Printf("Error while decoding PNG image:%s",err.Error())
+    	return
+  	}
+  	resolveCaptchaTesseract("captcha_grayscale.png")
+  // 	for i := 0; i <= 10000; i++ {
+	 //  	captchaString := breakCaptchaTensorflow(img)
+	 //  	if captchaString == "MtPtR" {
+	 //  		log.Printf("Captcha broken:%s in the %d round",captchaString, i)
+	 //  		break
+	 //  	} else {
+	 //  		log.Printf("Captcha in the %d round:%s",i, captchaString)
+	 //  	}
+	 // }
+	
 }
+
+func captchaTextReceived(captcha string) {
+	log.Printf("Going to book a slot for CenterID :%d, SessionID: %s, Slot: %s", bookingSlot.CenterID, bookingSlot.SessionID, bookingSlot.Slot)
+	bookAppointment(beneficiariesList, captcha)
+}
+// cmd := exec.Command("/bin/sh", mongoToCsvSH)

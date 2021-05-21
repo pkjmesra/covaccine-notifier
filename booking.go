@@ -3,7 +3,8 @@ package main
 import (
 	"encoding/json"
 	"log"
-
+	"fmt"
+	"strings"
 	// "github.com/pkg/errors"
 )
 
@@ -17,21 +18,26 @@ type ApptRequestError struct {
 	ErrorCode  	string `json:"errorCode"`
 }
 
-func bookAppointment(beneficiaryList *BeneficiaryList) {
+func bookAppointment(beneficiaryList *BeneficiaryList, captcha string) {
 	beneficiaryId := ""
-	outer:
+	// outer:
 	for _, beneficiary := range beneficiaryList.Beneficiaries {
 		if beneficiary.VaccinationStat == "Not Vaccinated" {
-			beneficiaryId = beneficiary.ReferenceID
-			break outer
+			if beneficiaryId == "" {
+				beneficiaryId = beneficiary.ReferenceID
+			} else {
+				beneficiaryId = beneficiaryId + "," + beneficiary.ReferenceID
+			}
+			// break outer
 		}
 	}
-	beneficiaries:= make([]string,1)
-	beneficiaries[0] = beneficiaryId
-	postBody := map[string]interface{}{"center_id": bookingSlot.CenterID, "dose": 1, "captcha": "","session_id": bookingSlot.SessionID, "slot": bookingSlot.Slot, "beneficiaries": beneficiaries}
+	beneficiaries:= strings.Split(beneficiaryId, ",") //make([]string,1)
+	//beneficiaries[0] = beneficiaryId
+	postBody := map[string]interface{}{"center_id": bookingSlot.CenterID, "dose": 1, "captcha": captcha,"session_id": bookingSlot.SessionID, "slot": bookingSlot.Slot, "beneficiaries": beneficiaries}
 	bodyBytes, err := queryServer(scheduleURLFormat, "POST", postBody)
 	cnf := AppointmentConfirmation{}
 	if err = json.Unmarshal(bodyBytes, &cnf); err != nil {
+		fmt.Println("Error in booking!")
 		aptErr := ApptRequestError{}
 		if err = json.Unmarshal(bodyBytes, &aptErr); err != nil {
 			log.Printf("Error scheduling: %s", err.Error())

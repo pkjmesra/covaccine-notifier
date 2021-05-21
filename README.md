@@ -23,16 +23,15 @@ In your bash_profile
 export C_INCLUDE_PATH="/usr/local/homebrew/include"
 export LIBRARY_PATH="/usr/local/homebrew/lib"
 
-```
+go build && go install && mv ./bin/bin/covaccine-notifier ./covaccine-notifier
+./covaccine-notifier --state Maharashtra --district Nagpur --age 41 -e email@gmail.com -p app_pwd -n notify.mp3 -w 91mobile -b 561793 -i 120
 
-### Docker
-```
-docker pull ghcr.io/prasadg193/covaccine-notifier:v0.2.0
+
 ```
 
 ## Usage
 
-covaccine-notifier can monitor vaccine availability either by pin-code or state and district names
+covaccine-notifier can monitor vaccine availability either by pin-code or state and district names. It can also send you whatsapp texts, email, receive OTP via whatsapp text and book and appointment if CAPTCHA is sent via whatsapp text.
 
 ```bash
 $ ./covaccine-notifier --help
@@ -42,14 +41,17 @@ Usage:
   covaccine-notifier [FLAGS] [flags]
 
 Flags:
-  -a, --age int           Search appointment for age
-  -d, --district string   Search by district name
-  -e, --email string      Email address to send notifications
-  -h, --help              help for covaccine-notifier
-  -i, --interval int      Interval to repeat the search. Default: (60) second
-  -p, --password string   Email ID password for auth
-  -c, --pincode string    Search by pin code
-  -s, --state string      Search by state name
+  -a, --age int                    Search appointment for age
+  -b, --bookingCenterId int        Preferred booking center Id
+  -d, --district string            Search by district name
+  -e, --email string               Email address to send notifications
+  -h, --help                       help for covaccine-notifier
+  -i, --interval int               Interval to repeat the search. Default: (240) second
+  -n, --notificationFile string    Specify a local MP3 file to play when a slot is available
+  -p, --password string            Email ID password for auth
+  -c, --pincode string             Search by pin code
+  -s, --state string               Search by state name
+  -w, --whatsAppRemoteNum string   Specify a remote WhatsApp mobile number
 
 ```
 
@@ -71,19 +73,11 @@ covaccine-notifier --state Maharashtra --district Akola --age 27  --email <email
 covaccine-notifier --pincode 444002 --age 27  --email <email-id> --password <email-password>
 ```
 
-### Docker
-
+#### Search in a district and send whatsapp and email notifications
 ```
-docker run --rm -ti ghcr.io/prasadg193/covaccine-notifier:v0.2.0  --state Maharashtra --district Akola --age 27  --email <email-id> --password <email-password>
+./covaccine-notifier --state Maharashtra --district Mumbai --age 45 -e email@gmail.com -p abcdefghijkl -n notify.mp3 -w 91<mobilenumber> -b <Preferred center ID>
 ```
-
-### Running on Kubernetes Cluster
-
-If you are not willing to keep your terminal on all the time :smile:, you can also create a Pod on K8s cluster
-
-```
-kubectl run covaccine-notifier --image=ghcr.io/prasadg193/covaccine-notifier:v0.2.0 --command -- /covaccine-notifier --state Maharashtra --district Akola --age 27  --email <email-id> --password <email-password>
-```
+You can get the center ID from the whatsapp text notification
 
 ## Contributing
 
@@ -92,3 +86,7 @@ We love your input! We want to make contributing to this project as easy and tra
 - Discussing the current state of the code
 - Submitting a fix
 - Proposing new features
+
+## Acknowledgement
+The initial base code for searching the availability is based on https://github.com/PrasadG193/covaccine-notifier
+All additions like whatsapp, sound nitifications, OTPs, Captcha, and other API handling for beneficiaries, appointments etc has been added.
