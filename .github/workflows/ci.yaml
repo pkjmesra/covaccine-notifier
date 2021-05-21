@@ -26,8 +26,3 @@ jobs:
           args: release --rm-dist --skip-publish
         env:
           GORELEASER_CURRENT_TAG: latest
-      - name: Build and push latest image
-        if: success() &&  github.event_name  == 'push'  && endsWith(github.ref ,'main')
-        run: |
-          docker login ghcr.io -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
-          docker push ghcr.io/prasadg193/covaccine-notifier:latest
